@@ -91,3 +91,40 @@ def detect(frm, net, ln):
                 confidences.append(float(confidence))
 
     idxs = cv2.dnn.NMSBoxes(boxes, confidences, CONFIDENCE_THRESHOLD, NMS_THRESHOLD)
+
+if len(idxs) > 0:
+        for i in idxs.flatten():
+            (x, y) = (boxes[i][0], boxes[i][1])
+            (w, h) = (boxes[i][2], boxes[i][3])
+
+            color = [int(c) for c in COLORS[classIds[i]]]
+            cv2.rectangle(frm, (x, y), (x + w, y + h), color, 2)
+            text = "{}: {:.4f}".format(class_names[classIds[i]], confidences[i])
+            cv2.putText(
+                frm, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2
+            )
+
+            fps_label = "FPS: %.2f" % (1 / (end_time - start_time))
+            cv2.putText(
+                frm, fps_label, (0, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2
+            )
+
+
+while cv2.waitKey(1) < 1:
+    (grabbed, frame) = vc.read()
+    if not grabbed:
+        break
+    frame = cv2.resize(frame, (args.height, args.width))
+    detect(frame, net, layer)
+
+    if args.display == 1:
+        cv2.imshow("detections", frame)
+
+    if args.output != "" and writer is None:
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        writer = cv2.VideoWriter(
+            args.output, fourcc, 25, (frame.shape[1], frame.shape[0]), True
+        )
+
+    if writer is not None:
+        writer.write(frame)
